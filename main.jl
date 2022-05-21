@@ -37,16 +37,8 @@ task = EmbeddingTask(
     (ImagePreprocessing(),),
 )
 
-x = encodesample(task, Training(), getobs(train_set, 1))
-
-
-BATCHSIZE = 48
+BATCHSIZE = 16
 dataloader = DataLoader(taskdataset(shuffleobs(train_set), task, Training()), BATCHSIZE)
-dataiter = collect(dataloader)
-for xs in dataiter
-    print(size(xs))
-    break
-end
 
 struct VAE{E,D}
     encoder::E
@@ -56,6 +48,7 @@ end
 Flux.@functor VAE
 
 function (vae::VAE)(xs)
+    println(xs)
     μ, logσ² = vae.encoder(xs)
     zs = sample_latent(μ, logσ²)
     x̄s = vae.decoder(zs)
@@ -145,12 +138,11 @@ function FluxTraining.on(
 end
 
 learner = Learner(model, (), ADAM(), βELBO, ToGPU())
-
 FluxTraining.removecallback!(learner, ProgressPrinter);
 
 fitonecycle!(
     learner,
     2,
-    0.01;
-    phases=(VAETrainingPhase() => dataiter,)
+    0.00000001;
+    phases = (VAETrainingPhase() => dataloader,)
 )
