@@ -33,3 +33,12 @@ function setup(::Type{Swarm}, data)
     N,W = size(getobs(data, 1))
     Swarm(N,W)
 end
+
+
+# Again assuming 3 dimentions
+struct SwarmPreprocessing <: FastAI.Encoding end
+
+function SwarmPreprocessing()
+    return SwarmPreprocessing
+end
+

@@ -21,34 +21,27 @@ window_size = 60
 
 data = slidingwindow(normalised', window_size, stride=1)
 
-train_set, validate_set, test_set = splitobs(data, (0.7, 0.2));
+train_set, validate_set, test_set = splitobs(map(transpose, data), (0.7, 0.2));
 
-
-getobs(train_set,1)
+getobs(train_set, 1)
 
 function EmbeddingTask(block, encodings)
     sample = block
-    encodedsample = x = y = ŷ = encodedblockfilled(encodings, sample)
+    encodedsample = x = y = ŷ = sample
     blocks = (; sample, x, y, ŷ, encodedsample)
     BlockTask(blocks, encodings)
 end
 
-struct SwarmPreprocessing <: Encoding
-    augmentation::Function
-end
-
 task = EmbeddingTask(
-    Image{3}(),
-    (ImagePreprocessing(means=SVector(0.0), stds=SVector(1.0), C=Gray{Float32}),),
+    Swarm(900, 60),
+    (ImagePreprocessing(),),
 )
 
-axes(train_set)
-
 x = encodesample(task, Training(), getobs(train_set, 1))
-showencodedsample(task, x)
+
 
 BATCHSIZE = 48
-dataloader = DataLoader(taskdataset(shuffleobs(data), task, Training()), BATCHSIZE)
+dataloader = DataLoader(taskdataset(shuffleobs(train_set), task, Training()), BATCHSIZE)
 dataiter = collect(dataloader)
 for xs in dataiter
     print(size(xs))
@@ -97,8 +90,8 @@ encoder =
         Flux.flatten,
         Parallel(
             tuple,
-            Dense(500, Dlatent), # μ
-            Dense(500, Dlatent), # logσ²
+            Dense(500, 100), # μ
+            Dense(500, 100), # logσ²
         ),
     ) |> gpu
 
@@ -118,9 +111,9 @@ decoder = Chain(
     # 60x9000xb
     ConvTranspose((9,), 9000 => 900; pad=SamePad()),
     # 60x900xb
-    ) |> gpu
+) |> gpu
 
-    model = VAE(encoder, decoder)
+model = VAE(encoder, decoder)
 
 struct VAETrainingPhase <: FluxTraining.AbstractTrainingPhase end
 
